@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=680,height:800">
+<title>WordWork</title>
+<style><!--
+body {
+	font-family: Tahoma, Helvetica, sans;
+	font-size: 18px;
+	background-color: #fff;
+	margin: 0;
+}
+div.center {
+	position: absolute;
+	width: 640px;
+	left: 50%;
+	margin-left: -320px;
+}
+p#info {
+	color: #777;
+	text-align: center;
+	margin: 0;
+	margin-top: 40px;
+	padding: 0;
+}
+p#info b {
+	color: #333;
+}
+table {
+	width: 100%;
+	border-spacing: 0;
+	margin-top: 20px;
+}
+td {
+	padding: 5px 0px;
+}
+td.arr {
+	color: #999;
+	width: 60px;
+	text-align: center;
+	font-size: 40px;
+}
+div.bottom {
+	width: 100%;
+	margin-top: 40px;
+}
+div#solution td {
+	font-size: 22px;
+	font-weight: bold;
+	text-transform: uppercase;
+	text-align:center;
+	color: #333;
+}
+div#solution tr:nth-child(even) {
+	background-color: #f5f5f5;
+}
+div#solution tr:nth-child(odd) {
+	background-color: #eee;
+}
+input {
+	font: inherit;
+	font-size: 28px;
+	font-weight: bold;
+	text-align: center;
+	text-transform: uppercase;
+}
+input[type=text] {
+	color: #000;
+	padding: 10px 0px;
+	width: 286px;
+	background-color: #f5f5f5;
+	border: 2px solid #999;
+}
+input[type=text]:focus {
+	outline: none;
+	background-color: #efe;
+	border: 2px solid #090;
+}
+input[type=submit],input[type=button] {
+	padding: 10px;
+	color: #fff;
+	background-color: #393;
+	border:none;
+	cursor: pointer;
+}
+input[type=submit]:active,input[type=button]:active {
+	background-color: #373;
+	border:none;
+}
+input[type=submit]:disabled,input[type=button]:disabled {
+	background-color: #999;
+	color: #eee;
+	border:none;
+}
+--></style>
+</style>
+<script src="wordlist.js"></script>
+<script>
+
+var info;
+var graph4 = [];
+
+var worker = new Worker('worker.js');
+function bsearch(arr, x, i0, i1) {
+	if(i0>=i1) {
+		if(arr[i0]==x)
+			return i0;
+		else
+			return -1;
+	}
+	else {
+		let i = ~~((i0+i1)/2);
+		let v = arr[i];
+		if(v==x)
+			return i;
+		else if(v>x)
+			return bsearch(arr, x, i0, i-1);
+		else
+			return bsearch(arr, x, i+1, i1);
+	}
+}
+
+function binarySearch(words, w) {
+	return bsearch(words, w, 0, words.length);
+}
+
+worker.onmessage = function(e) {
+	if(e.data.fn=='words4') {
+		info.innerHTML = 'Building 5-letter word graph...<br/>(will take even longer)';
+		worker.postMessage({'fn':'words5', 'words':words5});
+	}
+	else if(e.data.fn=='words5') {
+		info.innerHTML = 'Ready!';
+		document.getElementById('input').style.display = 'block';
+	}
+	else if(e.data.fn=='solve4' || e.data.fn=='solve5') {
+		let words;
+		if(e.data.fn=='solve4')
+			words = words4;
+		else
+			words = words5;
+
+		let res = e.data.res;
+		if(res.length>1) {
+			if(res.length>2)
+				info.innerHTML = 'Solved in <b>'+(res.length-1)+'</b> steps.';
+			else
+				info.innerHTML = 'Solved in <b>1</b> step.';
+			let sol = '<table>';
+			for(let i=0; i<res.length; i++) {
+				sol += '<tr><td>'+words[res[i]]+'</td></tr>'
+			}
+			sol += '</table>';
+			document.getElementById('solution').innerHTML = sol;
+			document.getElementById('showsolution').style.display = 'block';
+		}
+		else {
+			info.innerHTML = 'No solution!';
+		}
+		document.getElementById('solve').disabled = false;
+	}
+}
+
+function solveWords(fn, w0, w1, words) {
+	let i0 = binarySearch(words, w0);
+	let i1 = binarySearch(words, w1);
+	if(i0<0)
+		info.innerHTML = 'Word <b>'+w0.toUpperCase()+'</b> is not in the list.';
+	else if(i1<0)
+		info.innerHTML = 'Word <b>'+w1.toUpperCase()+'</b> is not in the list.';
+	else {
+		info.innerHTML = 'Solving...';
+		document.getElementById('showsolution').style.display = 'none';
+		document.getElementById('solution').style.display = 'none';
+		document.getElementById('solve').disabled = true;
+		worker.postMessage({'fn':fn, 'i0':i0, 'i1':i1});
+	}
+}
+
+function solve() {
+	let w0 = document.getElementById('w0').value.toLowerCase();
+	let w1 = document.getElementById('w1').value.toLowerCase();
+	let len = w0.length;
+	if(w0==w1)
+		info.innerHTML = 'Same word!';
+	else if(len!=w1.length)
+		info.innerHTML = 'Word lengths don\'t match!';
+	else if(len==4)
+		solveWords('solve4', w0, w1, words4);
+	else if(len==5)
+		solveWords('solve5', w0, w1, words5);
+	else
+		info.innerHTML = 'Can do only 4 or 5 letter words.';
+}
+
+function showSolution() {
+	document.getElementById('showsolution').style.display = 'none';
+	document.getElementById('solution').style.display = 'block';
+}
+
+window.onload = function() {
+	info = document.getElementById('info');
+	info.innerHTML = 'Building 4-letter word graph...<br/>(may take a few seconds)';
+	worker.postMessage({'fn':'words4', 'words':words4});
+	//document.getElementById('input').style.display = 'block';
+}
+
+</script>
+</head>
+<body>
+<div id="body" class="center">
+<div id="input" style="display:none">
+<table>
+<tr><td><input id="w0" type="text" maxlength="5" value="word"/></td><td class="arr">&#x1f846;</td><td><input id="w1" type="text"  maxlength="5" value="work" /></td></tr>
+<tr><td colspan="3"><input id="solve" type="button" value="Solve" style="width:100%" onclick="solve()" /></td></tr>
+</table>
+</div>
+<p id="info"></p>
+<div id="showsolution" class="bottom" style="display:none"><input type="button" value="Show solution" style="width:100%" onclick="showSolution()" /></div>
+<div id="solution" class="bottom" style="display:none"></div>
+</div>
+</div>
+</body>
+</html>
