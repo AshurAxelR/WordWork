@@ -92,6 +92,10 @@ input[type=submit]:disabled,input[type=button]:disabled {
 	color: #eee;
 	border:none;
 }
+input#rand {
+	width: 60px;
+	font-size: 24px;
+}
 --></style>
 </style>
 <script src="wordlist.js"></script>
@@ -198,6 +202,22 @@ function showSolution() {
 	document.getElementById('solution').style.display = 'block';
 }
 
+function randomise() {
+	let words;
+	if(Math.random()>=0.5)
+		words = words4;
+	else
+		words = words5;
+		
+	let w0 = words[Math.floor(Math.random() * words.length)];
+	let w1 = w0;
+	while(w1==w0) {
+		w1 = words[Math.floor(Math.random() * words.length)];
+	}
+	document.getElementById('w0').value = w0;
+	document.getElementById('w1').value = w1;
+}
+
 window.onload = function() {
 	info = document.getElementById('info');
 	info.innerHTML = 'Building 4-letter word graph...<br/>(may take a few seconds)';
@@ -211,7 +231,8 @@ window.onload = function() {
 <div id="body" class="center">
 <div id="input" style="display:none">
 <table>
-<tr><td><input id="w0" type="text" maxlength="5" value="word"/></td><td class="arr">&#x1f846;</td><td><input id="w1" type="text"  maxlength="5" value="work" /></td></tr>
+<tr><td colspan="3" style="text-align:right"><input id="rand" type="button" value="&#x21bb;" onclick="randomise()"/></td></tr>
+<tr><td><input id="w0" type="text" maxlength="5" value="word"/></td><td class="arr">&raquo;</td><td><input id="w1" type="text"  maxlength="5" value="work" /></td></tr>
 <tr><td colspan="3"><input id="solve" type="button" value="Solve" style="width:100%" onclick="solve()" /></td></tr>
 </table>
 </div>
